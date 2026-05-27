@@ -6,6 +6,11 @@
 
 網站會自動計算期末資產、累積投入本金、投資損益、投資報酬率、通膨後購買力，以及若要達成目標金額每月應投入多少。同時使用 Recharts 呈現資產成長、本金累積與通膨後購買力線，並提供保守、基本、樂觀三種情境比較。
 
+## 線上版本
+
+- 公開網站：https://dca-investment-calculator-final-rep.vercel.app
+- GitHub 儲存庫：https://github.com/geterreteg/dca-investment-calculator-final-report
+
 ## 使用技術
 
 - React
