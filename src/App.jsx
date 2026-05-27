@@ -15,6 +15,22 @@ import {
 const disclaimer =
   "本系統僅供財金資訊系統開發課程報告與情境試算使用，不構成任何投資建議。實際投資仍須考量個人風險承受度、市場波動、稅費與金融商品特性。";
 
+const etfDataDisclaimer =
+  "ETF 報酬率由 Yahoo Finance 歷史價格資料估算，資料來源非官方 API，僅供課程展示與情境試算使用，不代表未來績效。";
+
+const supportedEtfs = [
+  ["0050", "元大台灣50"],
+  ["0056", "元大高股息"],
+  ["006208", "富邦台50"],
+  ["00692", "富邦公司治理"],
+  ["00713", "元大台灣高息低波"],
+  ["00878", "國泰永續高股息"],
+  ["00881", "國泰台灣5G+"],
+  ["00919", "群益台灣精選高息"],
+  ["00923", "群益台ESG低碳50"],
+  ["00929", "復華台灣科技優息"],
+];
+
 const initialInputs = {
   initialAmount: 10000,
   monthlyAmount: 3000,
@@ -28,7 +44,7 @@ const initialInputs = {
 const inputFields = [
   ["initialAmount", "期初投入金額", "元", "一開始投入市場的金額"],
   ["monthlyAmount", "每月投入金額", "元", "每個月固定投入的金額"],
-  ["annualReturn", "預估年化報酬率", "%", "尚未扣除管理費前的年化報酬率"],
+  ["annualReturn", "預估年化報酬率", "%", "可手動輸入，也可由台股 ETF 代碼自動估算"],
   ["years", "投資年期", "年", "預計持續投資的時間"],
   ["annualFee", "年管理費率 / 交易成本", "%", "基金管理費、平台費或交易成本估計"],
   ["inflation", "年通膨率", "%", "用來估計未來資產的實質購買力"],
@@ -136,6 +152,10 @@ function CustomTooltip({ active, payload, label }) {
 
 function App() {
   const [inputs, setInputs] = useState(initialInputs);
+  const [etfCode, setEtfCode] = useState("0050");
+  const [etfLoading, setEtfLoading] = useState(false);
+  const [etfError, setEtfError] = useState("");
+  const [etfInfo, setEtfInfo] = useState(null);
 
   const result = useMemo(() => simulateInvestment(inputs), [inputs]);
   const monthlyNeeded = useMemo(() => requiredMonthlyInvestment(inputs), [inputs]);
@@ -165,11 +185,49 @@ function App() {
     }));
   };
 
+  const handleEtfLookup = async () => {
+    const symbol = etfCode.trim();
+    setEtfLoading(true);
+    setEtfError("");
+
+    try {
+      const response = await fetch(`/api/etf-return?symbol=${encodeURIComponent(symbol)}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "查詢失敗，請手動輸入報酬率。");
+      }
+
+      setEtfInfo(data);
+      setInputs((current) => ({
+        ...current,
+        annualReturn: data.annualizedReturn,
+      }));
+    } catch (error) {
+      setEtfInfo(null);
+      setEtfError(error.message || "查詢失敗，請手動輸入報酬率。");
+    } finally {
+      setEtfLoading(false);
+    }
+  };
+
   const exportText = () => {
+    const etfLines = etfInfo
+      ? [
+          `ETF 代碼：${etfInfo.symbol}`,
+          `ETF 名稱：${etfInfo.name}`,
+          `ETF 報酬率資料來源：${etfInfo.source}`,
+          `ETF 報酬率計算期間：${etfInfo.startDate} 至 ${etfInfo.endDate}，約 ${etfInfo.periodYears} 年`,
+          `ETF 近年年化報酬率：${etfInfo.annualizedReturn}%`,
+          `ETF 資料提醒：${etfInfo.warning || etfDataDisclaimer}`,
+        ]
+      : ["ETF 報酬率資料：未使用自動查詢，採手動輸入報酬率。"];
+
     const lines = [
       "定期定額投資試算網站 - 試算結果",
       "",
       "一、使用者輸入參數",
+      ...etfLines,
       `期初投入金額：${currency(inputs.initialAmount)}`,
       `每月投入金額：${currency(inputs.monthlyAmount)}`,
       `預估年化報酬率：${inputs.annualReturn}%`,
@@ -194,7 +252,8 @@ function App() {
           )}，與基本情境差距 ${currency(item.diff)}`
       ),
       "",
-      "四、免責聲明",
+      "四、資料來源與免責聲明",
+      etfDataDisclaimer,
       disclaimer,
     ];
 
@@ -229,8 +288,8 @@ function App() {
             </p>
             <div className="mt-8 grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <b className="block text-slate-900">輸入投資假設</b>
-                報酬率、管理費、通膨與目標金額
+                <b className="block text-slate-900">ETF 自動估算</b>
+                輸入台股 ETF 代碼，帶入近 5 年年化報酬率
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <b className="block text-slate-900">即時計算結果</b>
@@ -276,20 +335,73 @@ function App() {
       </section>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <section className="grid gap-6 lg:grid-cols-[390px_1fr]">
+        <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
             <div className="mb-5 flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-bold text-slate-950">輸入區</h2>
-                <p className="text-sm text-slate-500">調整參數後系統會自動重新試算</p>
+                <p className="text-sm text-slate-500">可手動試算，也可用 ETF 代碼估算報酬率</p>
               </div>
               <button
-                onClick={() => setInputs(initialInputs)}
+                onClick={() => {
+                  setInputs(initialInputs);
+                  setEtfCode("0050");
+                  setEtfInfo(null);
+                  setEtfError("");
+                }}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 重設
               </button>
             </div>
+
+            <div className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <label className="block">
+                <span className="mb-1 block text-sm font-bold text-slate-900">台股 ETF 代碼</span>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    type="text"
+                    value={etfCode}
+                    onChange={(event) => {
+                      setEtfCode(event.target.value.replace(/[^\d]/g, ""));
+                      setEtfError("");
+                    }}
+                    placeholder="0050、0056、006208、00878、00919"
+                    inputMode="numeric"
+                    className="min-w-0 flex-1 rounded-lg border border-emerald-300 bg-white px-3 py-3 text-base font-semibold text-slate-950 outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleEtfLookup}
+                    disabled={etfLoading}
+                    className="rounded-lg bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  >
+                    {etfLoading ? "查詢中..." : "查詢近5年年化報酬率"}
+                  </button>
+                </div>
+              </label>
+              <p className="mt-2 text-xs leading-5 text-slate-600">
+                支援：{supportedEtfs.map(([code]) => code).join("、")}。查詢失敗時仍可手動填寫報酬率。
+              </p>
+              {etfInfo && (
+                <div className="mt-3 rounded-lg bg-white p-3 text-sm leading-6 text-slate-700">
+                  <p className="font-bold text-emerald-800">
+                    {etfInfo.symbol} {etfInfo.name}：近年年化報酬率 {etfInfo.annualizedReturn}%
+                  </p>
+                  <p>
+                    期間：{etfInfo.startDate} 至 {etfInfo.endDate}，約 {etfInfo.periodYears} 年；來源：
+                    {etfInfo.source}
+                  </p>
+                  <p className="text-xs text-slate-500">{etfInfo.warning || etfDataDisclaimer}</p>
+                </div>
+              )}
+              {etfError && (
+                <p className="mt-3 rounded-lg bg-rose-50 p-3 text-sm font-semibold text-rose-700">
+                  {etfError}
+                </p>
+              )}
+            </div>
+
             <div className="grid gap-4">
               {inputFields.map(([key, label, unit, hint]) => (
                 <label key={key} className="block">
@@ -306,6 +418,11 @@ function App() {
                     className="w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-base font-semibold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                   />
                   <span className="mt-1 block text-xs leading-5 text-slate-500">{hint}</span>
+                  {key === "annualReturn" && etfInfo && (
+                    <span className="mt-1 block text-xs leading-5 text-emerald-700">
+                      已由 {etfInfo.symbol} {etfInfo.name} 的近年年化報酬率帶入，可依個人假設再手動調整。
+                    </span>
+                  )}
                 </label>
               ))}
             </div>
@@ -406,10 +523,10 @@ function App() {
             {[
               ["系統目的", "用互動式網站協助使用者理解定期定額、複利、費用與通膨如何改變長期投資成果。"],
               ["使用對象", "大學生、小資族、投資新手，以及需要用簡單方式建立投資規劃概念的使用者。"],
-              ["解決的痛點", "多數新手只看報酬率，容易忽略每月投入能力、管理費、通膨與目標金額之間的關係。"],
-              ["產品特色", "即時計算、圖表視覺化、情境比較、目標金額反推與 txt 試算結果匯出。"],
+              ["解決的痛點", "多數新手不知道報酬率要填多少，因此系統可透過台股 ETF 代碼估算近年年化報酬率。"],
+              ["產品特色", "即時計算、ETF 報酬率查詢、圖表視覺化、情境比較、目標金額反推與 txt 匯出。"],
               ["系統提供的洞見 insight", "長期投資成果不只取決於報酬率，也受到投入紀律、成本控制與通膨侵蝕影響。"],
-              ["免責聲明", disclaimer],
+              ["免責聲明", `${etfDataDisclaimer} ${disclaimer}`],
             ].map(([title, text]) => (
               <article key={title} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <h3 className="font-bold text-slate-950">{title}</h3>
