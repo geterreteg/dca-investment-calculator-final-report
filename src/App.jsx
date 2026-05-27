@@ -277,16 +277,16 @@ function App() {
   return (
     <main className="min-h-screen bg-[#f5f7fb]">
       <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8 lg:py-14">
-          <div className="flex flex-col justify-center">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:gap-8 sm:px-6 sm:py-10 lg:grid-cols-[1.15fr_0.85fr] lg:px-8 lg:py-14">
+          <div className="flex min-w-0 flex-col justify-center">
             <p className="mb-3 text-sm font-semibold text-emerald-700">財金資訊系統開發期末報告</p>
-            <h1 className="text-4xl font-bold tracking-normal text-slate-950 sm:text-5xl">
+            <h1 className="text-3xl font-bold tracking-normal text-slate-950 sm:text-4xl lg:text-5xl">
               定期定額投資試算網站
             </h1>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
+            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:mt-5 sm:text-lg sm:leading-8">
               用互動式試算理解複利、成本與通膨對長期投資的影響
             </p>
-            <div className="mt-8 grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
+            <div className="mt-6 grid gap-3 text-sm text-slate-600 sm:mt-8 sm:grid-cols-3">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <b className="block text-slate-900">ETF 自動估算</b>
                 輸入台股 ETF 代碼，帶入近 5 年年化報酬率
@@ -301,10 +301,10 @@ function App() {
               </div>
             </div>
           </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-950 p-6 text-white shadow-soft">
+          <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-950 p-5 text-white shadow-soft sm:p-6">
             <p className="text-sm text-slate-300">基本情境期末資產</p>
-            <p className="mt-3 text-4xl font-bold">{currency(result.asset)}</p>
-            <div className="mt-6 h-48">
+            <p className="mt-3 break-words text-3xl font-bold sm:text-4xl">{currency(result.asset)}</p>
+            <div className="mt-6 h-40 sm:h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={result.yearlyData}>
                   <defs>
@@ -334,8 +334,8 @@ function App() {
         </div>
       </section>
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <section className="grid min-w-0 gap-6 lg:grid-cols-[420px_1fr]">
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
             <div className="mb-5 flex items-center justify-between gap-3">
               <div>
@@ -368,7 +368,7 @@ function App() {
                     }}
                     placeholder="0050、0056、006208、00878、00919"
                     inputMode="numeric"
-                    className="min-w-0 flex-1 rounded-lg border border-emerald-300 bg-white px-3 py-3 text-base font-semibold text-slate-950 outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
+                  className="min-w-0 flex-1 rounded-lg border border-emerald-300 bg-white px-3 py-3 text-base font-semibold text-slate-950 outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
                   />
                   <button
                     type="button"
@@ -434,10 +434,10 @@ function App() {
             </button>
           </div>
 
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <section>
               <h2 className="mb-4 text-xl font-bold text-slate-950">結果卡片區</h2>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
                 {summaryCards.map(([title, value, note, color]) => (
                   <div key={title} className="rounded-lg border border-slate-200 bg-white p-4 shadow-soft">
                     <div className={`mb-4 inline-flex rounded-lg px-3 py-1 text-xs font-bold ${color}`}>
@@ -462,11 +462,11 @@ function App() {
                   淨年化報酬率：{percent(result.netAnnualReturn)}
                 </p>
               </div>
-              <div className="h-[360px] w-full">
+              <div className="h-[280px] w-full sm:h-[340px] lg:h-[380px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={result.yearlyData} margin={{ top: 12, right: 16, left: 12, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="4 4" stroke="#e2e8f0" />
-                    <XAxis dataKey="year" tick={{ fill: "#475569", fontSize: 12 }} />
+                    <XAxis dataKey="year" tick={{ fill: "#475569", fontSize: 11 }} interval="preserveStartEnd" />
                     <YAxis
                       tick={{ fill: "#475569", fontSize: 12 }}
                       tickFormatter={(value) => `${Math.round(value / 10000)}萬`}
